@@ -1,18 +1,68 @@
-import { test, expect } from "@playwright/test";
+import { test as base, expect } from "@playwright/test";
 
 const baseUrl = "https://katalon-demo-cura.herokuapp.com/";
 
+type LoginFixtures = {
+  credentials: {
+    valid: { username: string; password: string };
+    invalidPassword: { username: string; password: string };
+    invalidUsername: { username: string; password: string };
+  };
+  selectors: {
+    usernameInput: string;
+    passwordInput: string;
+    loginButton: string;
+    loginFailedMessage: string;
+  };
+};
+
+const test = base.extend<LoginFixtures>({
+  credentials: async ({}, use) => {
+    await use({
+      valid: {
+        username: "John Doe",
+        password: "ThisIsNotAPassword",
+      },
+      invalidPassword: {
+        username: "John Doe",
+        password: "WrongPassword",
+      },
+      invalidUsername: {
+        username: "WrongUser",
+        password: "ThisIsNotAPassword",
+      },
+    });
+  },
+  selectors: async ({}, use) => {
+    await use({
+      usernameInput: "#txt-username",
+      passwordInput: "#txt-password",
+      loginButton: "#btn-login",
+      loginFailedMessage:
+        "Login failed! Please ensure the username and password are valid.",
+    });
+  },
+});
+
 // Arrange Act Assert: Valid login
 
-test("Login passes with valid user", async ({ page }) => {
+test("Login passes with valid user", async ({
+  page,
+  credentials,
+  selectors,
+}) => {
   // Arrange
   await page.goto(baseUrl);
   await page.getByRole("link", { name: "Make Appointment" }).click();
 
   // Act
-  await page.fill("#txt-username", "John Doe");
-  await page.fill("#txt-password", "ThisIsNotAPassword");
-  await page.click("#btn-login");
+  const usernameInput = page.locator(selectors.usernameInput);
+  const passwordInput = page.locator(selectors.passwordInput);
+  const loginButton = page.locator(selectors.loginButton);
+
+  await usernameInput.fill(credentials.valid.username);
+  await passwordInput.fill(credentials.valid.password);
+  await loginButton.click();
 
   // Assert
   await expect(page).toHaveURL(/appointment/);
@@ -23,66 +73,56 @@ test("Login passes with valid user", async ({ page }) => {
 
 // Arrange Act Assert: Invalid password
 
-test("Login fails with invalid password", async ({ page }) => {
+test("Login fails with invalid password", async ({
+  page,
+  credentials,
+  selectors,
+}) => {
   // Arrange
   await page.goto(baseUrl);
   await page.getByRole("link", { name: "Make Appointment" }).click();
 
   // Act
-  await page.fill("#txt-username", "John Doe");
-  await page.fill("#txt-password", "WrongPassword");
-  await page.click("#btn-login");
+  const usernameInput = page.locator(selectors.usernameInput);
+  const passwordInput = page.locator(selectors.passwordInput);
+  const loginButton = page.locator(selectors.loginButton);
+  const loginFailedMessage = page
+    .locator("p")
+    .filter({ hasText: selectors.loginFailedMessage });
+
+  await usernameInput.fill(credentials.invalidPassword.username);
+  await passwordInput.fill(credentials.invalidPassword.password);
+  await loginButton.click();
 
   // Assert
-  await expect(
-    page
-      .locator("p")
-      .filter({
-        hasText:
-          "Login failed! Please ensure the username and password are valid.",
-      }),
-  ).toBeVisible();
-  await expect(
-    page
-      .locator("p")
-      .filter({
-        hasText:
-          "Login failed! Please ensure the username and password are valid.",
-      }),
-  ).toContainText(
-    "Login failed! Please ensure the username and password are valid.",
-  );
+  await expect(loginFailedMessage).toBeVisible();
+  await expect(loginFailedMessage).toContainText(selectors.loginFailedMessage);
 });
 
 // Arrange Act Assert: Invalid username
 
-test("Login fails with invalid username", async ({ page }) => {
+test("Login fails with invalid username", async ({
+  page,
+  credentials,
+  selectors,
+}) => {
   // Arrange
   await page.goto(baseUrl);
   await page.getByRole("link", { name: "Make Appointment" }).click();
 
   // Act
-  await page.fill("#txt-username", "WrongUser");
-  await page.fill("#txt-password", "ThisIsNotAPassword");
-  await page.click("#btn-login");
+  const usernameInput = page.locator(selectors.usernameInput);
+  const passwordInput = page.locator(selectors.passwordInput);
+  const loginButton = page.locator(selectors.loginButton);
+  const loginFailedMessage = page
+    .locator("p")
+    .filter({ hasText: selectors.loginFailedMessage });
+
+  await usernameInput.fill(credentials.invalidUsername.username);
+  await passwordInput.fill(credentials.invalidUsername.password);
+  await loginButton.click();
 
   // Assert
-  await expect(
-    page
-      .locator("p")
-      .filter({
-        hasText:
-          "Login failed! Please ensure the username and password are valid.",
-      }),
-  ).toBeVisible();
-  await expect(
-    page
-      .locator("p")
-      .filter({
-        hasText:
-          "Login failed! Please ensure the username and password are valid.",
-      }),
-  ).toContainText(
-    "Login failed! Please ensure the username and password are valid.",
-  );
+  await expect(loginFailedMessage).toBeVisible();
+  await expect(loginFailedMessage).toContainText(selectors.loginFailedMessage);
 });
