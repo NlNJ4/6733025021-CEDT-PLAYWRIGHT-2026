@@ -1,6 +1,7 @@
 import { test as base, expect, type Page } from "@playwright/test";
 
-const baseUrl = "https://katalon-demo-cura.herokuapp.com/";
+const baseUrl =
+  process.env.BASE_URL ?? "https://katalon-demo-cura.herokuapp.com/";
 
 type LoginFixtures = {
   validUsername: string;
